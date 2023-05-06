@@ -1,39 +1,62 @@
 <script>
-  import { onMount } from "svelte";
-
-  let data = [];
   let searchValue = "";
-  let filteredData = [];
+  let books = [];
 
-  async function fetchData() {
-    const response = await fetch("https://jsonplaceholder.typicode.com/posts");
-    data = await response.json();
-    filteredData = data;
+  async function searchBooks() {
+    if (searchValue.trim() === "") {
+      books = [];
+      return;
+    }
+
+    const response = await fetch(
+      `http://openlibrary.org/search.json?title=${encodeURIComponent(
+        searchValue
+      )}`
+    );
+    const data = await response.json();
+    books = data.docs.slice(0, 10);
   }
-
-  function filterData() {
-    filteredData = data.filter((item) => {
-      return Object.values(item).some((value) =>
-        value.toString().toLowerCase().includes(searchValue.toLowerCase())
-      );
-    });
-  }
-
-  onMount(fetchData);
 </script>
 
-<input
-  type="text"
-  bind:value={searchValue}
-  placeholder="Buscar..."
-  on:input={filterData}
-/>
-<button on:click={filterData}>Buscar</button>
+<div class="search-container">
+  <input type="text" bind:value={searchValue} placeholder="Buscar..." />
+  <button on:click={searchBooks}>Buscar</button>
+</div>
 <ul>
-  {#each filteredData as item (item.id)}
+  {#each books as book (book.key)}
     <li>
-      <strong>{item.title}</strong>
-      <p>{item.body}</p>
+      <strong>{book.title}</strong>
+      <p>Autor: {book.author_name && book.author_name.join(", ")}</p>
     </li>
   {/each}
 </ul>
+
+<style>
+  .search-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    padding: 10px;
+    background-color: white;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+  ul {
+    list-style-type: none;
+    padding: 0;
+    margin-top: 60px;
+    min-width: "80%";
+  }
+  li {
+    margin-bottom: 10px;
+    padding: 10px;
+    border: 1px solid #ccc;
+  }
+  input {
+    padding: 5px;
+    margin-right: 5px;
+  }
+  button {
+    padding: 5px;
+  }
+</style>
