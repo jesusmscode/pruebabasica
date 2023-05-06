@@ -1,20 +1,35 @@
 <script>
+  import { onMount } from "svelte";
+
   let searchValue = "";
   let books = [];
+  let isLoading = false;
+  let errorMessage = "";
 
   async function searchBooks() {
-    if (searchValue.trim() === "") {
+    isLoading = true;
+    errorMessage = "";
+    try {
+      if (searchValue.trim() === "") {
+        books = [];
+      } else {
+        const response = await fetch(
+          `http://openlibrary.org/search.json?title=${encodeURIComponent(
+            searchValue
+          )}`
+        );
+        if (!response.ok) {
+          throw new Error("Error en la búsqueda");
+        }
+        const data = await response.json();
+        books = data.docs.slice(0, 10);
+      }
+    } catch (error) {
+      errorMessage = error.message;
       books = [];
-      return;
+    } finally {
+      isLoading = false;
     }
-
-    const response = await fetch(
-      `http://openlibrary.org/search.json?title=${encodeURIComponent(
-        searchValue
-      )}`
-    );
-    const data = await response.json();
-    books = data.docs.slice(0, 10);
   }
 </script>
 
@@ -22,6 +37,15 @@
   <input type="text" bind:value={searchValue} placeholder="Buscar..." />
   <button on:click={searchBooks}>Buscar</button>
 </div>
+
+{#if isLoading}
+  <p>Cargando...</p>
+{/if}
+
+{#if errorMessage}
+  <p>{errorMessage}</p>
+{/if}
+
 <ul>
   {#each books as book (book.key)}
     <li>
